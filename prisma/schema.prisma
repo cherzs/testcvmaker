@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          String    @default("USER") // USER atau ADMIN
+  membership    String    @default("GRATIS") // GRATIS atau PREMIUM
+  referralCode  String    @unique @default(uuid())
+  referredBy    String?   
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  cvs           CV[]
+  applications  JobApplication[]
+  referralsMade Referral[] @relation("ReferrerRelation")
+}
+
+model CV {
+  id              String   @id @default(uuid())
+  userId          String
+  template        String   @default("MODERN")
+  
+  // Data Pribadi
+  fullName        String
+  jobTitle        String
+  about           String?
+  email           String
+  phone           String?
+  address         String?
+  
+  // Data JSON untuk skills, experience, education
+  skills          String   
+  experiences     String   
+  educations      String   
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications    JobApplication[]
+}
+
+model Job {
+  id            String   @id @default(uuid())
+  title         String
+  company       String
+  location      String
+  description   String
+  requirements  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  applications  JobApplication[]
+}
+
+model JobApplication {
+  id          String   @id @default(uuid())
+  userId      String
+  jobId       String
+  cvId        String
+  status      String   @default("PENDING")
+  appliedAt   DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  cv          CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+}
+
+model Referral {
+  id          String   @id @default(uuid())
+  referrerId  String
+  referredId  String   @unique
+  createdAt   DateTime @default(now())
+
+  // Relations
+  referrer    User     @relation("ReferrerRelation", fields: [referrerId], references: [id])
+}
